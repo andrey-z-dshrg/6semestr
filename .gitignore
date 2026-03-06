@@ -1,39 +1,29 @@
-HELP.md
+﻿# Сборка
 target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+*.class
+*.log
+logs/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Секреты — никогда не коммитим
+application.properties
+application.yml
+application-*.properties
+application-*.yml
+*.p12
+*.jks
+keystore/
+.env
+.env.*
+secrets/
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IDE файлы
+.idea/
 *.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
 .vscode/
+.classpath
+.project
+.settings/
 
-# local environment variables
-.env
+# Другое
 .DS_Store
-src/main/resources/license-keystore-1BIB23392.p12
-.env
+Thumbs.db
