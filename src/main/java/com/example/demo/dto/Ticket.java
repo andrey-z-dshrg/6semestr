@@ -5,13 +5,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Ticket {
-    private LocalDateTime serverDate;       // текущая дата сервера
-    private long ticketLifetimeSeconds;     // время жизни тикета
-    private LocalDate activationDate;       // дата активации лицензии
-    private LocalDate expirationDate;       // дата истечения лицензии
-    private Long userId;                    // идентификатор пользователя
-    private Long deviceId;                  // идентификатор устройства
-    private boolean licenseBlocked;        // флаг блокировки лицензии
+    private LocalDateTime serverDate;      
+    private long ticketLifetimeSeconds;
+    private LocalDate activationDate;       
+    private LocalDate expirationDate;     
+    private Long userId;                  
+    private Long deviceId;                  
+    private boolean licenseBlocked;        
 
     public Ticket(LocalDateTime serverDate, long ticketLifetimeSeconds,
                   LocalDate activationDate, LocalDate expirationDate,
