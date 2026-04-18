@@ -10,10 +10,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+// Глобальный обработчик ошибок. Он делает ответы об ошибках предсказуемыми и понятными для клиента.
 public class GlobalExceptionHandler {
 
-    // <- добавлено: перехватывает ResponseStatusException из LicenseService
     @ExceptionHandler(ResponseStatusException.class)
+    // Отдельный шаг логики внутри класса. Он решает одну локальную задачу и используется из других методов этого же класса.
     public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException ex) {
         Map<String, String> body = new HashMap<>();
         body.put("error", ex.getReason());
@@ -22,6 +23,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
+    // Отдельный шаг логики внутри класса. Он решает одну локальную задачу и используется из других методов этого же класса.
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         Map<String, String> body = new HashMap<>();
         body.put("error", "Bad request");
@@ -30,6 +32,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalStateException.class)
+    // Отдельный шаг логики внутри класса. Он решает одну локальную задачу и используется из других методов этого же класса.
     public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException ex) {
         Map<String, String> body = new HashMap<>();
         body.put("error", "Conflict");

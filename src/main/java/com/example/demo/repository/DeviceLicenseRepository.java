@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
+// Репозиторий Spring Data. Через него сервисы читают и сохраняют данные, не прописывая SQL вручную для каждой операции.
 public interface DeviceLicenseRepository extends JpaRepository<DeviceLicense, Long> {
     long countByLicense(License license);
     boolean existsByLicenseAndDevice_MacAddress(License license, String macAddress);

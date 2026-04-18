@@ -31,10 +31,13 @@ import java.io.IOException;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // <- нужно для @PreAuthorize
+@EnableMethodSecurity
+// Центральная конфигурация безопасности. Здесь собрано всё, что связано с JWT, проверкой пользователя и правилами доступа к endpoint-ам.
 public class SecurityConfig {
 
+    // Поле объекта, которое хранит зависимость или важное внутреннее состояние класса.
     private final CustomUserDetailsService userDetailsService;
+    // Поле объекта, которое хранит зависимость или важное внутреннее состояние класса.
     private final JwtTokenProvider jwtTokenProvider;
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
@@ -44,11 +47,13 @@ public class SecurityConfig {
     }
 
     @Bean
+    // Создаёт кодировщик паролей. Благодаря ему в базе хранятся не исходные пароли, а их безопасные хеши.
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
+    // Создаёт провайдер аутентификации, который умеет сравнивать пароль пользователя с хешем в базе.
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
@@ -57,37 +62,47 @@ public class SecurityConfig {
     }
 
     @Bean
+    // Даёт приложению доступ к стандартному менеджеру аутентификации Spring Security.
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig)
             throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
     @Bean
+    // Создаёт фильтр, который будет читать JWT из входящих запросов раньше стандартной проверки логина и пароля.
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
     @Bean
+    // Главное правило безопасности HTTP-запросов: какие адреса открыты, какие требуют токен и где нужна роль администратора.
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
                         .requestMatchers("/", "/hello", "/auth/register", "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/licenses/public-key").permitAll() // ← добавлено
+                        .requestMatchers(HttpMethod.GET, "/api/licenses/public-key", "/api/licenses/public-key/pem").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/signatures/public-key", "/api/signatures/public-key/pem").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/licenses/verify-ticket").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/signatures/*/verify").permitAll()
 
-                        // License endpoints
                         .requestMatchers(HttpMethod.POST, "/api/licenses").hasRole("ADMIN")
-                        .requestMatchers("/api/licenses/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/licenses/activate").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/licenses/renew").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/licenses/check").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/signatures").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/signatures/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/signatures/*").hasRole("ADMIN")
 
-                        // Users
+                        .requestMatchers("/api/licenses/**").authenticated()
+                        .requestMatchers("/api/signatures/**").authenticated()
+
                         .requestMatchers(HttpMethod.POST, "/api/users/create").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").authenticated()
 
-                        // Everything else
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
@@ -98,7 +113,9 @@ public class SecurityConfig {
 
     public static class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+        // Поле объекта, которое хранит зависимость или важное внутреннее состояние класса.
         private final JwtTokenProvider jwtTokenProvider;
+        // Поле объекта, которое хранит зависимость или важное внутреннее состояние класса.
         private final CustomUserDetailsService userDetailsService;
 
         public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
@@ -108,6 +125,7 @@ public class SecurityConfig {
         }
 
         @Override
+        // Фильтр безопасности, который на каждом запросе пытается распознать JWT и положить пользователя в SecurityContext.
         protected void doFilterInternal(HttpServletRequest request,
                                         HttpServletResponse response,
                                         FilterChain filterChain)
@@ -132,6 +150,7 @@ public class SecurityConfig {
             filterChain.doFilter(request, response);
         }
 
+        // Достаёт Bearer-токен из заголовка Authorization и отбрасывает служебный префикс.
         private String extractToken(HttpServletRequest request) {
             String bearer = request.getHeader("Authorization");
             if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
