@@ -1,70 +1,105 @@
 package com.example.demo.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
-// DTO запроса на создание сигнатуры.
-// Именно такой объект Spring собирает из JSON-тела POST /api/signatures,
-// а затем сервис использует его как источник новых данных для записи.
+// Это тело запроса на создание новой сигнатуры.
+// Именно из этих полей сервис собирает новую запись в таблице signatures и потом считает для неё цифровую подпись.
 public class AntivirusSignatureCreateRequest {
 
     @NotBlank
-    @Size(max = 150)
-    // Человеко-понятное имя сигнатуры.
-    // Обычно это короткое обозначение, по которому запись легко узнать в списке.
-    private String signatureName;
+    @Size(max = 255)
+    // Основное имя угрозы.
+    private String threatName;
 
     @NotBlank
-    @Size(max = 150)
-    // Название угрозы или семейства вредоносного ПО, которому соответствует сигнатура.
-    private String malwareName;
+    @Pattern(regexp = "^[0-9A-Fa-f]+$", message = "firstBytesHex must contain only hex characters")
+    @Size(max = 512)
+    // Первые байты сигнатуры в hex-виде.
+    private String firstBytesHex;
 
     @NotBlank
-    // Основное содержимое сигнатуры.
-    // Это одно из ключевых полей, которое участвует в формировании подписи записи.
-    private String signatureBody;
+    @Pattern(regexp = "^[0-9A-Fa-f]+$", message = "remainderHashHex must contain only hex characters")
+    @Size(max = 512)
+    // Хэш оставшейся части сигнатуры, тоже в hex-виде.
+    private String remainderHashHex;
 
-    // Дополнительное описание сигнатуры обычным текстом.
-    // Поле не обязательно для алгоритма, но помогает понять смысл записи человеку.
-    private String description;
+    @NotNull
+    @PositiveOrZero
+    // Длина хвоста сигнатуры.
+    private Long remainderLength;
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getSignatureName() {
-        return signatureName;
+    @NotBlank
+    @Size(max = 100)
+    // Тип файла, для которого подходит сигнатура.
+    private String fileType;
+
+    @NotNull
+    @PositiveOrZero
+    // Начало диапазона сигнатуры внутри файла.
+    private Long offsetStart;
+
+    @NotNull
+    @PositiveOrZero
+    // Конец диапазона сигнатуры внутри файла.
+    private Long offsetEnd;
+
+    public String getThreatName() {
+        return threatName;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setSignatureName(String signatureName) {
-        this.signatureName = signatureName;
+    public void setThreatName(String threatName) {
+        this.threatName = threatName;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getMalwareName() {
-        return malwareName;
+    public String getFirstBytesHex() {
+        return firstBytesHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setMalwareName(String malwareName) {
-        this.malwareName = malwareName;
+    public void setFirstBytesHex(String firstBytesHex) {
+        this.firstBytesHex = firstBytesHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getSignatureBody() {
-        return signatureBody;
+    public String getRemainderHashHex() {
+        return remainderHashHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setSignatureBody(String signatureBody) {
-        this.signatureBody = signatureBody;
+    public void setRemainderHashHex(String remainderHashHex) {
+        this.remainderHashHex = remainderHashHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getDescription() {
-        return description;
+    public Long getRemainderLength() {
+        return remainderLength;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setDescription(String description) {
-        this.description = description;
+    public void setRemainderLength(Long remainderLength) {
+        this.remainderLength = remainderLength;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Long getOffsetStart() {
+        return offsetStart;
+    }
+
+    public void setOffsetStart(Long offsetStart) {
+        this.offsetStart = offsetStart;
+    }
+
+    public Long getOffsetEnd() {
+        return offsetEnd;
+    }
+
+    public void setOffsetEnd(Long offsetEnd) {
+        this.offsetEnd = offsetEnd;
     }
 }

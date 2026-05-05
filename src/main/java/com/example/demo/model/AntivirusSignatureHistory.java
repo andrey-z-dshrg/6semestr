@@ -1,184 +1,173 @@
 package com.example.demo.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "antivirus_signature_history")
-// Сущность таблицы history.
-// В отличие от audit, здесь хранится не факт действия, а слепок старого состояния записи.
+@Table(name = "signatures_history")
+// Эта таблица хранит прошлые версии записей.
+// Сюда мы складываем полный снимок сигнатуры до update и до logical delete, чтобы потом можно было показать историю изменений.
 public class AntivirusSignatureHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // Первичный ключ строки history.
-    private Long id;
+    @Column(name = "history_id", nullable = false, updatable = false)
+    private Long historyId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "signature_id", nullable = false)
-    // Сигнатура, чья старая версия была сохранена.
+    // Это ссылка на ту самую сигнатуру, чья старая версия была сохранена в историю.
     private AntivirusSignature signature;
 
+    @Column(name = "version_created_at", nullable = false)
+    // Время, когда именно эта историческая версия была записана в таблицу history.
+    private LocalDateTime versionCreatedAt;
+
+    @Column(name = "threat_name", nullable = false, length = 255)
+    private String threatName;
+
+    @Column(name = "first_bytes_hex", nullable = false, length = 512)
+    private String firstBytesHex;
+
+    @Column(name = "remainder_hash_hex", nullable = false, length = 512)
+    private String remainderHashHex;
+
+    @Column(name = "remainder_length", nullable = false)
+    private Long remainderLength;
+
+    @Column(name = "file_type", nullable = false, length = 100)
+    private String fileType;
+
+    @Column(name = "offset_start", nullable = false)
+    private Long offsetStart;
+
+    @Column(name = "offset_end", nullable = false)
+    private Long offsetEnd;
+
+    @Column(name = "updated_at", nullable = false)
+    // Значение updatedAt той версии, которая ушла в history.
+    private LocalDateTime updatedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    // Причина попадания строки в history: UPDATE или DELETE.
-    private AntivirusSignatureHistoryAction action;
-
-    @Column(nullable = false, length = 150)
-    // Старое имя сигнатуры.
-    private String signatureName;
-
-    @Column(nullable = false, length = 150)
-    // Старое название угрозы.
-    private String malwareName;
-
-    @Column(nullable = false, columnDefinition = "TEXT")
-    // Старое тело сигнатуры.
-    private String signatureBody;
-
-    @Column(columnDefinition = "TEXT")
-    // Старое описание.
-    private String description;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    // Статус записи на момент сохранения снимка.
     private AntivirusSignatureStatus status;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    // Подпись той версии записи, которая ушла в history.
-    private String digitalSignature;
+    @Column(name = "digital_signature_base64", nullable = false, length = 2048)
+    // Подпись не новой записи, а именно старой версии, которую мы сохранили.
+    private String digitalSignatureBase64;
 
-    @Column(nullable = false)
-    // Исходное время создания основной записи.
-    private LocalDateTime originalCreatedAt;
-
-    @Column(nullable = false)
-    // Время последнего изменения той версии, которая сохранялась.
-    private LocalDateTime originalUpdatedAt;
-
-    @Column(nullable = false)
-    // Момент, когда строка была добавлена в таблицу history.
-    private LocalDateTime historyCreatedAt;
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public Long getId() {
-        return id;
+    public Long getHistoryId() {
+        return historyId;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setId(Long id) {
-        this.id = id;
+    public void setHistoryId(Long historyId) {
+        this.historyId = historyId;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
     public AntivirusSignature getSignature() {
         return signature;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
     public void setSignature(AntivirusSignature signature) {
         this.signature = signature;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public AntivirusSignatureHistoryAction getAction() {
-        return action;
+    public LocalDateTime getVersionCreatedAt() {
+        return versionCreatedAt;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setAction(AntivirusSignatureHistoryAction action) {
-        this.action = action;
+    public void setVersionCreatedAt(LocalDateTime versionCreatedAt) {
+        this.versionCreatedAt = versionCreatedAt;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getSignatureName() {
-        return signatureName;
+    public String getThreatName() {
+        return threatName;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setSignatureName(String signatureName) {
-        this.signatureName = signatureName;
+    public void setThreatName(String threatName) {
+        this.threatName = threatName;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getMalwareName() {
-        return malwareName;
+    public String getFirstBytesHex() {
+        return firstBytesHex;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setMalwareName(String malwareName) {
-        this.malwareName = malwareName;
+    public void setFirstBytesHex(String firstBytesHex) {
+        this.firstBytesHex = firstBytesHex;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getSignatureBody() {
-        return signatureBody;
+    public String getRemainderHashHex() {
+        return remainderHashHex;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setSignatureBody(String signatureBody) {
-        this.signatureBody = signatureBody;
+    public void setRemainderHashHex(String remainderHashHex) {
+        this.remainderHashHex = remainderHashHex;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getDescription() {
-        return description;
+    public Long getRemainderLength() {
+        return remainderLength;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setDescription(String description) {
-        this.description = description;
+    public void setRemainderLength(Long remainderLength) {
+        this.remainderLength = remainderLength;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Long getOffsetStart() {
+        return offsetStart;
+    }
+
+    public void setOffsetStart(Long offsetStart) {
+        this.offsetStart = offsetStart;
+    }
+
+    public Long getOffsetEnd() {
+        return offsetEnd;
+    }
+
+    public void setOffsetEnd(Long offsetEnd) {
+        this.offsetEnd = offsetEnd;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public AntivirusSignatureStatus getStatus() {
         return status;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
     public void setStatus(AntivirusSignatureStatus status) {
         this.status = status;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getDigitalSignature() {
-        return digitalSignature;
+    public String getDigitalSignatureBase64() {
+        return digitalSignatureBase64;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setDigitalSignature(String digitalSignature) {
-        this.digitalSignature = digitalSignature;
-    }
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public LocalDateTime getOriginalCreatedAt() {
-        return originalCreatedAt;
-    }
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setOriginalCreatedAt(LocalDateTime originalCreatedAt) {
-        this.originalCreatedAt = originalCreatedAt;
-    }
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public LocalDateTime getOriginalUpdatedAt() {
-        return originalUpdatedAt;
-    }
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setOriginalUpdatedAt(LocalDateTime originalUpdatedAt) {
-        this.originalUpdatedAt = originalUpdatedAt;
-    }
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public LocalDateTime getHistoryCreatedAt() {
-        return historyCreatedAt;
-    }
-
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setHistoryCreatedAt(LocalDateTime historyCreatedAt) {
-        this.historyCreatedAt = historyCreatedAt;
+    public void setDigitalSignatureBase64(String digitalSignatureBase64) {
+        this.digitalSignatureBase64 = digitalSignatureBase64;
     }
 }

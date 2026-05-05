@@ -8,18 +8,12 @@ import java.security.Signature;
 import java.util.Base64;
 
 @Service
-// Сервис подписи - это общий вход в криптографию для всего проекта.
-// Внешний код не должен знать детали Java Signature API: ему достаточно передать объект
-// и получить либо строку подписи, либо результат проверки.
+// Это общий вход в криптографию для проекта.
+// Остальному коду не нужно знать детали Java Signature API: сервис либо подписывает данные, либо проверяет их.
 public class SigningService {
 
-    // Отсюда сервис берёт приватный и публичный ключ.
-    // Отдельный provider позволяет не смешивать чтение keystore с логикой подписи.
     private final SignatureKeyProvider keyProvider;
-    // Перед подписью объект нужно привести к стабильному JSON-виду,
-    // иначе одинаковые данные могут дать разную подпись из-за разного порядка полей.
     private final JsonCanonicalizationService canonicalizationService;
-    // Хранит алгоритм подписи и связанные настройки.
     private final SignatureProperties properties;
 
     public SigningService(SignatureKeyProvider keyProvider,
@@ -30,30 +24,26 @@ public class SigningService {
         this.properties = properties;
     }
 
-    // Формирует подпись в три шага:
-    // 1. канонизирует объект в стабильный набор байтов;
-    // 2. подписывает эти байты приватным ключом;
-    // 3. кодирует подпись в Base64, чтобы её было удобно хранить в БД и передавать по HTTP.
+    // Этот метод нужен для обычной бизнес-логики, где у нас есть объект с полями, а не готовый бинарный документ.
     public String sign(Object payload) {
-        try {
-            byte[] canonicalBytes = canonicalizationService.canonicalize(payload);
+        byte[] signatureBytes = sign(canonicalizationService.canonicalize(payload));
+        return Base64.getEncoder().encodeToString(signatureBytes);
+    }
 
+    // Этот перегруженный метод нужен уже для задания 5.
+    // Им подписывается не объект, а готовый массив байтов, например собранный manifest.bin до добавления подписи.
+    public byte[] sign(byte[] payloadBytes) {
+        try {
             Signature signer = Signature.getInstance(properties.getAlgorithm());
             signer.initSign(keyProvider.getPrivateKey());
-            signer.update(canonicalBytes);
-            byte[] signatureBytes = signer.sign();
-
-            return Base64.getEncoder().encodeToString(signatureBytes);
+            signer.update(payloadBytes);
+            return signer.sign();
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("Signing failed: " + e.getMessage(), e);
         }
     }
 
-    // Проверка работает зеркально по отношению к sign():
-    // те же данные снова канонизируются, подпись декодируется из Base64,
-    // после чего публичным ключом проверяется, подходит ли подпись к этим данным.
     public boolean verify(Object payload, String signatureBase64) {
-        // Пустую или отсутствующую подпись сразу считаем невалидной.
         if (!StringUtils.hasText(signatureBase64)) {
             return false;
         }
@@ -68,21 +58,28 @@ public class SigningService {
 
             return verifier.verify(signatureBytes);
         } catch (IllegalArgumentException e) {
-            // Сюда попадём, если строка подписи не декодируется как корректный Base64.
             return false;
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("Verification failed: " + e.getMessage(), e);
         }
     }
 
-    // Публичный ключ можно безопасно отдавать наружу:
-    // им можно проверять подписи, но нельзя подписывать новые данные.
+    // Такой вариант удобен в тестах и при проверке бинарных документов, когда подпись уже хранится как массив байтов.
+    public boolean verify(byte[] payloadBytes, byte[] signatureBytes) {
+        try {
+            Signature verifier = Signature.getInstance(properties.getAlgorithm());
+            verifier.initVerify(keyProvider.getPublicKey());
+            verifier.update(payloadBytes);
+            return verifier.verify(signatureBytes);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Verification failed: " + e.getMessage(), e);
+        }
+    }
+
     public String getPublicKeyBase64() {
         return Base64.getEncoder().encodeToString(keyProvider.getPublicKey().getEncoded());
     }
 
-    // PEM - это более привычный формат для внешних инструментов.
-    // Такой ключ легко использовать в OpenSSL, сторонних библиотеках и скриптах проверки.
     public String getPublicKeyPem() {
         String base64 = getPublicKeyBase64();
         String wrapped = base64.replaceAll("(.{64})", "$1\n");

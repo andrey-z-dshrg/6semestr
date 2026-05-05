@@ -21,25 +21,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
-// Этот тест имитирует практически всю защиту 4-й практической в одном сценарии.
-// Он не проверяет отдельную строчку кода, а проходит по бизнес-цепочке целиком:
-// create -> verify -> update -> history/audit -> delete -> increment/full export.
+// Этот тест проходит по всей основной бизнес-цепочке модуля сигнатур.
+// Он нужен, чтобы убедиться, что после переделки под ЗИОВПО и binary API старая логика 4 задания тоже осталась рабочей.
 class AntivirusSignatureServiceIntegrationTest {
 
     @Autowired
-    // Сам сервис, который и является главным объектом проверки в этом тесте.
     private AntivirusSignatureService antivirusSignatureService;
 
     @Autowired
-    // Репозиторий основной таблицы используется, чтобы при необходимости проверить состояние базы напрямую.
     private AntivirusSignatureRepository signatureRepository;
 
     @Autowired
-    // Репозиторий history нужен для очистки базы перед каждым сценарием.
     private AntivirusSignatureHistoryRepository historyRepository;
 
     @Autowired
-    // Репозиторий audit тоже очищается перед стартом сценария.
     private AntivirusSignatureAuditRepository auditRepository;
 
     @BeforeEach
@@ -50,17 +45,20 @@ class AntivirusSignatureServiceIntegrationTest {
     }
 
     @Test
-    void shouldSupportAllRequiredOperationsAndRules() throws InterruptedException {
+    void shouldSupportRequiredJsonOperations() throws InterruptedException {
         AntivirusSignatureCreateRequest createRequest = new AntivirusSignatureCreateRequest();
-        createRequest.setSignatureName("Trojan.Win32.Agent");
-        createRequest.setMalwareName("Agent");
-        createRequest.setSignatureBody("4D5A90000300000004000000FFFF");
-        createRequest.setDescription("Initial signature");
+        createRequest.setThreatName("Trojan.Win32.Agent");
+        createRequest.setFirstBytesHex("4D5A90000300000004000000");
+        createRequest.setRemainderHashHex("5F4DCC3B5AA765D61D8327DEB882CF99");
+        createRequest.setRemainderLength(4096L);
+        createRequest.setFileType("exe");
+        createRequest.setOffsetStart(128L);
+        createRequest.setOffsetEnd(256L);
 
         AntivirusSignatureResponse created = antivirusSignatureService.create(createRequest, "admin1");
         assertThat(created.id()).isNotNull();
-        assertThat(created.status()).isEqualTo(AntivirusSignatureStatus.ACTIVE);
-        assertThat(created.digitalSignature()).isNotBlank();
+        assertThat(created.status()).isEqualTo(AntivirusSignatureStatus.ACTUAL);
+        assertThat(created.digitalSignatureBase64()).isNotBlank();
         assertThat(antivirusSignatureService.verify(created.id()).valid()).isTrue();
 
         assertThat(antivirusSignatureService.getFullExport()).hasSize(1);
@@ -70,21 +68,28 @@ class AntivirusSignatureServiceIntegrationTest {
         Thread.sleep(1100);
 
         AntivirusSignatureUpdateRequest updateRequest = new AntivirusSignatureUpdateRequest();
-        updateRequest.setSignatureName("Trojan.Win32.Agent.Updated");
-        updateRequest.setMalwareName("Agent");
-        updateRequest.setSignatureBody("4D5A90000300000004000000AAAABBBB");
-        updateRequest.setDescription("Updated signature");
+        updateRequest.setThreatName("Trojan.Win32.Agent.V2");
+        updateRequest.setFirstBytesHex("4D5A90000300000004000000AA");
+        updateRequest.setRemainderHashHex("A94A8FE5CCB19BA61C4C0873D391E987");
+        updateRequest.setRemainderLength(8192L);
+        updateRequest.setFileType("dll");
+        updateRequest.setOffsetStart(512L);
+        updateRequest.setOffsetEnd(768L);
 
         AntivirusSignatureResponse updated = antivirusSignatureService.update(created.id(), updateRequest, "admin1");
-        assertThat(updated.digitalSignature()).isNotEqualTo(created.digitalSignature());
         assertThat(updated.updatedAt()).isAfter(created.updatedAt());
+        assertThat(updated.threatName()).isEqualTo("Trojan.Win32.Agent.V2");
+        assertThat(updated.digitalSignatureBase64()).isNotEqualTo(created.digitalSignatureBase64());
         assertThat(antivirusSignatureService.verify(updated.id()).valid()).isTrue();
 
         List<AntivirusSignatureResponse> incrementAfterUpdate = antivirusSignatureService.getIncrement(sinceBeforeUpdate);
         assertThat(incrementAfterUpdate).extracting(AntivirusSignatureResponse::id).contains(updated.id());
 
         assertThat(antivirusSignatureService.getHistory(updated.id())).hasSize(1);
+        assertThat(antivirusSignatureService.getHistory(updated.id()).getFirst().threatName()).isEqualTo("Trojan.Win32.Agent");
         assertThat(antivirusSignatureService.getAudit(updated.id())).hasSize(2);
+        assertThat(antivirusSignatureService.getAudit(updated.id()).getFirst().fieldsChanged())
+                .contains("threatName", "firstBytesHex");
 
         LocalDateTime sinceBeforeDelete = updated.updatedAt();
         Thread.sleep(1100);
@@ -102,8 +107,10 @@ class AntivirusSignatureServiceIntegrationTest {
 
         assertThat(antivirusSignatureService.getHistory(deleted.id())).hasSize(2);
         assertThat(antivirusSignatureService.getAudit(deleted.id())).hasSize(3);
+        assertThat(antivirusSignatureService.getAudit(deleted.id()).getFirst().description())
+                .isEqualTo("Signature logically deleted");
 
-        assertThat(historyRepository.findAllBySignature_IdOrderByHistoryCreatedAtDescIdDesc(deleted.id())).hasSize(2);
-        assertThat(auditRepository.findAllBySignature_IdOrderByActionAtDescIdDesc(deleted.id())).hasSize(3);
+        assertThat(historyRepository.findAllBySignature_IdOrderByVersionCreatedAtDescHistoryIdDesc(deleted.id())).hasSize(2);
+        assertThat(auditRepository.findAllBySignature_IdOrderByChangedAtDescAuditIdDesc(deleted.id())).hasSize(3);
     }
 }

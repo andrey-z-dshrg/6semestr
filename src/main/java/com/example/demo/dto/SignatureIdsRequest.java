@@ -4,22 +4,18 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.UUID;
 
-// DTO для операции "получить сигнатуры по списку id".
-// Клиент отправляет сюда массив идентификаторов, а сервис возвращает только соответствующие записи.
 public class SignatureIdsRequest {
 
     @NotEmpty
-    // Список id сигнатур, которые клиент хочет получить.
-    private List<@NotNull Long> ids;
+    private List<@NotNull UUID> ids;
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public List<Long> getIds() {
+    public List<UUID> getIds() {
         return ids;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setIds(List<Long> ids) {
+    public void setIds(List<UUID> ids) {
         this.ids = ids;
     }
 }

@@ -1,23 +1,16 @@
 package com.example.demo.dto;
 
-import com.example.demo.model.AntivirusSignatureAuditAction;
-
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-// DTO ответа для таблицы audit.
-// Этот объект не хранит старые данные сигнатуры, а описывает сам факт действия над ней.
+// Этот ответ нужен для показа журнала действий над сигнатурой.
+// По нему видно, кто и когда менял запись, какие поля были затронуты и как сервис описал событие.
 public record AntivirusSignatureAuditResponse(
-        // Id строки аудита.
-        Long id,
-        // Id сигнатуры, к которой относится событие.
-        Long signatureId,
-        // Тип действия: CREATE, UPDATE или DELETE.
-        AntivirusSignatureAuditAction action,
-        // Кто выполнил действие.
-        String actor,
-        // Короткое служебное пояснение о событии.
-        String details,
-        // Время записи события в аудит.
-        LocalDateTime actionAt
+        Long auditId,
+        UUID signatureId,
+        String changedBy,
+        LocalDateTime changedAt,
+        String fieldsChanged,
+        String description
 ) {
 }

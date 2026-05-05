@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "7c3f3c90-3bb4-47a1-8f34-4c96db1c6e29",
-    "name": "Antivirus Signatures Demo",
+    "name": "Antivirus Signatures ER Demo",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -72,12 +72,10 @@
                   "",
                   "const json = pm.response.json();",
                   "pm.collectionVariables.set('signatureId', json.id);",
-                  "pm.collectionVariables.set('createdSignature', json.digitalSignature);",
                   "pm.collectionVariables.set('createdUpdatedAt', json.updatedAt);",
                   "pm.test('Signature created and signed', function () {",
-                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.id).to.be.a('string').and.not.empty;",
                   "    pm.expect(json.status).to.eql('ACTIVE');",
-                  "    pm.expect(json.digitalSignature).to.be.a('string').and.not.empty;",
                   "});"
                 ]
               }
@@ -103,7 +101,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"signatureName\": \"Trojan.Win32.Agent\",\n  \"malwareName\": \"Agent\",\n  \"signatureBody\": \"4D5A90000300000004000000FFFF\",\n  \"description\": \"Initial signature from Postman\"\n}"
+              "raw": "{\n  \"threatName\": \"Trojan.Win32.Agent\",\n  \"firstBytes\": \"4D5A90000300000004000000\",\n  \"remainderHashHex\": \"5F4DCC3B5AA765D61D8327DEB882CF99\",\n  \"remainderLength\": 4096,\n  \"fileType\": \"exe\",\n  \"offsetStart\": 128,\n  \"offsetEnd\": 256\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/signatures",
@@ -130,8 +128,8 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "const signatureId = Number(pm.collectionVariables.get('signatureId'));",
-                  "pm.test('Full export contains created signature and no DELETED', function () {",
+                  "const signatureId = pm.collectionVariables.get('signatureId');",
+                  "pm.test('Full export contains created signature and no DELETED rows', function () {",
                   "    pm.expect(json.some(item => item.id === signatureId)).to.eql(true);",
                   "    pm.expect(json.every(item => item.status !== 'DELETED')).to.eql(true);",
                   "});"
@@ -176,7 +174,7 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "const signatureId = Number(pm.collectionVariables.get('signatureId'));",
+                  "const signatureId = pm.collectionVariables.get('signatureId');",
                   "pm.test('Request by ids returns the exact signature', function () {",
                   "    pm.expect(json.length).to.eql(1);",
                   "    pm.expect(json[0].id).to.eql(signatureId);",
@@ -205,7 +203,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ids\": [{{signatureId}}]\n}"
+              "raw": "{\n  \"ids\": [\"{{signatureId}}\"]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/signatures/by-ids",
@@ -269,11 +267,9 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "const createdSignature = pm.collectionVariables.get('createdSignature');",
-                  "pm.collectionVariables.set('updatedSignature', json.digitalSignature);",
                   "pm.collectionVariables.set('updatedUpdatedAt', json.updatedAt);",
                   "pm.test('Update recalculates digital signature', function () {",
-                  "    pm.expect(json.digitalSignature).to.not.eql(createdSignature);",
+                  "    pm.expect(json.threatName).to.eql('Trojan.Win32.Agent.V2');",
                   "});"
                 ]
               }
@@ -299,7 +295,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"signatureName\": \"Trojan.Win32.Agent.Updated\",\n  \"malwareName\": \"Agent\",\n  \"signatureBody\": \"4D5A90000300000004000000AAAABBBB\",\n  \"description\": \"Updated from Postman\"\n}"
+              "raw": "{\n  \"threatName\": \"Trojan.Win32.Agent.V2\",\n  \"firstBytes\": \"4D5A90000300000004000000AA\",\n  \"remainderHashHex\": \"A94A8FE5CCB19BA61C4C0873D391E987\",\n  \"remainderLength\": 8192,\n  \"fileType\": \"dll\",\n  \"offsetStart\": 512,\n  \"offsetEnd\": 768\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/signatures/{{signatureId}}",
@@ -327,8 +323,8 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "const signatureId = Number(pm.collectionVariables.get('signatureId'));",
-                  "pm.test('Increment after create/update contains updated row', function () {",
+                  "const signatureId = pm.collectionVariables.get('signatureId');",
+                  "pm.test('Increment after update contains the row', function () {",
                   "    pm.expect(json.some(item => item.id === signatureId)).to.eql(true);",
                   "});"
                 ]
@@ -379,9 +375,9 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.test('Update writes a row to History', function () {",
+                  "pm.test('Update writes a previous version to history', function () {",
                   "    pm.expect(json.length).to.be.at.least(1);",
-                  "    pm.expect(json.some(item => item.action === 'UPDATE')).to.eql(true);",
+                  "    pm.expect(json[0].threatName).to.eql('Trojan.Win32.Agent');",
                   "});"
                 ]
               }
@@ -426,10 +422,10 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.test('Create and update are written to Audit', function () {",
+                  "pm.test('Create and update are written to audit', function () {",
                   "    pm.expect(json.length).to.be.at.least(2);",
-                  "    pm.expect(json.some(item => item.action === 'CREATE')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.action === 'UPDATE')).to.eql(true);",
+                  "    pm.expect(json.some(item => item.description === 'Signature created')).to.eql(true);",
+                  "    pm.expect(json.some(item => item.description === 'Signature updated')).to.eql(true);",
                   "});"
                 ]
               }
@@ -520,8 +516,8 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "const signatureId = Number(pm.collectionVariables.get('signatureId'));",
-                  "pm.test('Full export does not contain DELETED rows', function () {",
+                  "const signatureId = pm.collectionVariables.get('signatureId');",
+                  "pm.test('Full export does not contain deleted rows', function () {",
                   "    pm.expect(json.some(item => item.id === signatureId)).to.eql(false);",
                   "    pm.expect(json.every(item => item.status !== 'DELETED')).to.eql(true);",
                   "});"
@@ -566,9 +562,9 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "const signatureId = Number(pm.collectionVariables.get('signatureId'));",
+                  "const signatureId = pm.collectionVariables.get('signatureId');",
                   "const row = json.find(item => item.id === signatureId);",
-                  "pm.test('Increment contains deleted row when updatedAt > since', function () {",
+                  "pm.test('Increment contains deleted row', function () {",
                   "    pm.expect(row).to.exist;",
                   "    pm.expect(row.status).to.eql('DELETED');",
                   "});"
@@ -620,10 +616,8 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.test('History is available by signatureId and contains UPDATE and DELETE', function () {",
+                  "pm.test('History keeps both previous versions', function () {",
                   "    pm.expect(json.length).to.be.at.least(2);",
-                  "    pm.expect(json.some(item => item.action === 'UPDATE')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.action === 'DELETE')).to.eql(true);",
                   "});"
                 ]
               }
@@ -668,11 +662,11 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.test('Audit is available by signatureId and contains CREATE/UPDATE/DELETE', function () {",
+                  "pm.test('Audit contains create, update and delete descriptions', function () {",
                   "    pm.expect(json.length).to.be.at.least(3);",
-                  "    pm.expect(json.some(item => item.action === 'CREATE')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.action === 'UPDATE')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.action === 'DELETE')).to.eql(true);",
+                  "    pm.expect(json.some(item => item.description === 'Signature created')).to.eql(true);",
+                  "    pm.expect(json.some(item => item.description === 'Signature updated')).to.eql(true);",
+                  "    pm.expect(json.some(item => item.description === 'Signature logically deleted')).to.eql(true);",
                   "});"
                 ]
               }
@@ -795,14 +789,6 @@
     },
     {
       "key": "signatureId",
-      "value": ""
-    },
-    {
-      "key": "createdSignature",
-      "value": ""
-    },
-    {
-      "key": "updatedSignature",
       "value": ""
     },
     {

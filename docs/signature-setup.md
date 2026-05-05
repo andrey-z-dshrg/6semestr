@@ -1,26 +1,45 @@
-# Настройка модуля ЭЦП
+# Antivirus Signatures Module
 
-## Что уже используется
-- хранилище ключей: `PKCS12`
-- алгоритм подписи: `SHA256withRSA`
-- канонизация JSON: `RFC 8785 (JCS)`
+This module now follows the ER diagram with three tables:
 
-## Как получить публичный ключ
-После запуска сервиса:
-- Base64: `GET /api/licenses/public-key`
-- PEM: `GET /api/licenses/public-key/pem`
+- `signatures`
+- `signatures_history`
+- `signatures_audit`
 
-## Что добавить в GitHub / GitLab
-### Variables
-- `SIGNATURE_PUBLIC_KEY_BASE64` — значение из `GET /api/licenses/public-key`
+## Main fields
 
-### Secrets
-- `SIGNATURE_KEYSTORE_PASSWORD`
-- `SIGNATURE_KEY_PASSWORD`
-- при необходимости `SERVER_SSL_KEY_STORE_PASSWORD`
+The current signature record stores:
 
-## Проверка подписи тикета
-1. Вызвать `POST /api/licenses/activate`, `POST /api/licenses/renew` или `POST /api/licenses/check`
-2. Получить `ticket` и `signature`
-3. Передать их в `POST /api/licenses/verify-ticket`
-4. Убедиться, что сервис возвращает `{ "valid": true }`
+- `id` as UUID
+- `threatName`
+- `firstBytes`
+- `remainderHashHex`
+- `remainderLength`
+- `fileType`
+- `offsetStart`
+- `offsetEnd`
+- `updatedAt`
+- `status`
+- `digitalSignatureBase64`
+
+## API flow
+
+1. `POST /api/signatures` creates a new signature and signs it.
+2. `PUT /api/signatures/{id}` saves the previous version to history, updates the current row, and writes an audit event.
+3. `DELETE /api/signatures/{id}` performs a logical delete by switching `status` to `DELETED`.
+4. `GET /api/signatures/{id}/history` returns previous versions from `signatures_history`.
+5. `GET /api/signatures/{id}/audit` returns audit entries from `signatures_audit`.
+6. `POST /api/signatures/{id}/verify` checks the stored digital signature.
+
+## Audit semantics
+
+- `fieldsChanged` contains a comma-separated list of changed fields.
+- `description` explains the operation in a human-readable way.
+- `changedBy` stores the authenticated username, or `system` if there is no user.
+
+## Public key endpoints
+
+- `GET /api/signatures/public-key`
+- `GET /api/signatures/public-key/pem`
+
+These endpoints expose the public key used to verify `digitalSignatureBase64`.

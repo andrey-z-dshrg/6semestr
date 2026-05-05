@@ -6,16 +6,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
-// Репозиторий основной таблицы сигнатур.
-// Через него сервис получает текущее состояние записей и строит полную/инкрементальную выгрузку.
-public interface AntivirusSignatureRepository extends JpaRepository<AntivirusSignature, Long> {
+// Репозиторий основной таблицы signatures.
+// Через него сервис получает актуальные записи для JSON API и binary API.
+public interface AntivirusSignatureRepository extends JpaRepository<AntivirusSignature, UUID> {
 
-    // Выбирает все записи, кроме заданного статуса.
-    // В проекте используется для полной выгрузки без DELETED.
-    List<AntivirusSignature> findAllByStatusNotOrderByIdAsc(AntivirusSignatureStatus status);
+    // Полная выгрузка должна содержать только рабочие записи.
+    List<AntivirusSignature> findAllByStatusOrderByUpdatedAtAscIdAsc(AntivirusSignatureStatus status);
 
-    // Выбирает все записи, изменённые после указанного времени.
-    // В проекте это основа для инкрементальной выгрузки.
+    // Инкремент строится по всем записям, которые изменились позже заданного момента.
+    // Сюда попадают и ACTUAL, и DELETED, если их updatedAt больше since.
     List<AntivirusSignature> findAllByUpdatedAtAfterOrderByUpdatedAtAscIdAsc(LocalDateTime since);
 }

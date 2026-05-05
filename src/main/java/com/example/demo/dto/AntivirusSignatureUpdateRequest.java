@@ -1,67 +1,98 @@
 package com.example.demo.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
-// DTO запроса на обновление сигнатуры.
-// По структуре он похож на create-запрос, но по смыслу используется уже для изменения существующей записи.
+// По структуре update почти совпадает с create.
+// Разница в том, что эти данные заменят существующее состояние записи, а старое состояние перед этим должно уйти в history.
 public class AntivirusSignatureUpdateRequest {
 
     @NotBlank
-    @Size(max = 150)
-    // Новое имя сигнатуры, которое после update должно заменить старое.
-    private String signatureName;
+    @Size(max = 255)
+    private String threatName;
 
     @NotBlank
-    @Size(max = 150)
-    // Новое значение поля malwareName для обновляемой записи.
-    private String malwareName;
+    @Pattern(regexp = "^[0-9A-Fa-f]+$", message = "firstBytesHex must contain only hex characters")
+    @Size(max = 512)
+    private String firstBytesHex;
 
     @NotBlank
-    // Новое тело сигнатуры.
-    // Если меняется это поле, подпись обязательно должна стать другой.
-    private String signatureBody;
+    @Pattern(regexp = "^[0-9A-Fa-f]+$", message = "remainderHashHex must contain only hex characters")
+    @Size(max = 512)
+    private String remainderHashHex;
 
-    // Новое текстовое описание.
-    private String description;
+    @NotNull
+    @PositiveOrZero
+    private Long remainderLength;
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getSignatureName() {
-        return signatureName;
+    @NotBlank
+    @Size(max = 100)
+    private String fileType;
+
+    @NotNull
+    @PositiveOrZero
+    private Long offsetStart;
+
+    @NotNull
+    @PositiveOrZero
+    private Long offsetEnd;
+
+    public String getThreatName() {
+        return threatName;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setSignatureName(String signatureName) {
-        this.signatureName = signatureName;
+    public void setThreatName(String threatName) {
+        this.threatName = threatName;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getMalwareName() {
-        return malwareName;
+    public String getFirstBytesHex() {
+        return firstBytesHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setMalwareName(String malwareName) {
-        this.malwareName = malwareName;
+    public void setFirstBytesHex(String firstBytesHex) {
+        this.firstBytesHex = firstBytesHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getSignatureBody() {
-        return signatureBody;
+    public String getRemainderHashHex() {
+        return remainderHashHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setSignatureBody(String signatureBody) {
-        this.signatureBody = signatureBody;
+    public void setRemainderHashHex(String remainderHashHex) {
+        this.remainderHashHex = remainderHashHex;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public String getDescription() {
-        return description;
+    public Long getRemainderLength() {
+        return remainderLength;
     }
 
-    // Метод DTO, который помогает читать или записывать поля объекта при преобразовании JSON и работе сервиса.
-    public void setDescription(String description) {
-        this.description = description;
+    public void setRemainderLength(Long remainderLength) {
+        this.remainderLength = remainderLength;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Long getOffsetStart() {
+        return offsetStart;
+    }
+
+    public void setOffsetStart(Long offsetStart) {
+        this.offsetStart = offsetStart;
+    }
+
+    public Long getOffsetEnd() {
+        return offsetEnd;
+    }
+
+    public void setOffsetEnd(Long offsetEnd) {
+        this.offsetEnd = offsetEnd;
     }
 }

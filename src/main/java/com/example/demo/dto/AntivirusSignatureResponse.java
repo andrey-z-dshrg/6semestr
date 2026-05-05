@@ -3,27 +3,21 @@ package com.example.demo.dto;
 import com.example.demo.model.AntivirusSignatureStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-// Основной DTO ответа по сигнатуре.
-// Такой объект клиент получает почти во всех операциях модуля: full export, increment, by-ids, create, update и delete.
+// Это основной DTO ответа по сигнатуре.
+// Его получают и обычные JSON-запросы чтения, и ответы после create/update/delete.
 public record AntivirusSignatureResponse(
-        // Идентификатор записи в основной таблице сигнатур.
-        Long id,
-        // Короткое имя сигнатуры.
-        String signatureName,
-        // Название угрозы, с которой связана сигнатура.
-        String malwareName,
-        // Основное содержимое сигнатуры.
-        String signatureBody,
-        // Дополнительное пояснение к записи.
-        String description,
-        // Текущий статус: ACTIVE или DELETED.
+        UUID id,
+        String threatName,
+        String firstBytesHex,
+        String remainderHashHex,
+        Long remainderLength,
+        String fileType,
+        Long offsetStart,
+        Long offsetEnd,
+        LocalDateTime updatedAt,
         AntivirusSignatureStatus status,
-        // Сохранённая цифровая подпись текущего состояния записи.
-        String digitalSignature,
-        // Время создания записи.
-        LocalDateTime createdAt,
-        // Время последнего изменения.
-        LocalDateTime updatedAt
+        String digitalSignatureBase64
 ) {
 }

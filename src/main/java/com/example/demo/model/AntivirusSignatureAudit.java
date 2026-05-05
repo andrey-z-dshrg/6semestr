@@ -1,99 +1,93 @@
 package com.example.demo.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "antivirus_signature_audit")
-// Сущность таблицы audit.
-// Каждая строка здесь описывает одно действие над сигнатурой, но не хранит полный снимок её данных.
+@Table(name = "signatures_audit")
+// Аудит отвечает на другой вопрос, чем история.
+// История хранит старые версии данных, а аудит хранит сам факт действия: кто, когда и что именно поменял.
 public class AntivirusSignatureAudit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // Первичный ключ строки аудита.
-    private Long id;
+    @Column(name = "audit_id", nullable = false, updatable = false)
+    private Long auditId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "signature_id", nullable = false)
-    // Ссылка на сигнатуру, над которой произошло действие.
+    // Через эту ссылку можно получить сигнатуру, к которой относится событие аудита.
     private AntivirusSignature signature;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    // Тип действия: CREATE, UPDATE или DELETE.
-    private AntivirusSignatureAuditAction action;
+    @Column(name = "changed_by", nullable = false, length = 100)
+    private String changedBy;
 
-    @Column(nullable = false, length = 100)
-    // Пользователь или система, выполнившие действие.
-    private String actor;
+    @Column(name = "changed_at", nullable = false)
+    private LocalDateTime changedAt;
 
-    @Column(length = 500)
-    // Короткое пояснение о событии.
-    private String details;
+    @Column(name = "fields_changed", nullable = false, columnDefinition = "TEXT")
+    // Это JSON-строка с массивом полей, которые реально изменились.
+    // Например: {"changed":["fileType","offsetEnd"]}.
+    private String fieldsChanged;
 
-    @Column(nullable = false)
-    // Когда событие было записано в audit.
-    private LocalDateTime actionAt;
+    @Column(nullable = false, length = 500)
+    // Короткая фраза, по которой можно быстро понять, что произошло: create, update или logical delete.
+    private String description;
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public Long getId() {
-        return id;
+    public Long getAuditId() {
+        return auditId;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setId(Long id) {
-        this.id = id;
+    public void setAuditId(Long auditId) {
+        this.auditId = auditId;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
     public AntivirusSignature getSignature() {
         return signature;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
     public void setSignature(AntivirusSignature signature) {
         this.signature = signature;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public AntivirusSignatureAuditAction getAction() {
-        return action;
+    public String getChangedBy() {
+        return changedBy;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setAction(AntivirusSignatureAuditAction action) {
-        this.action = action;
+    public void setChangedBy(String changedBy) {
+        this.changedBy = changedBy;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getActor() {
-        return actor;
+    public LocalDateTime getChangedAt() {
+        return changedAt;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setActor(String actor) {
-        this.actor = actor;
+    public void setChangedAt(LocalDateTime changedAt) {
+        this.changedAt = changedAt;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public String getDetails() {
-        return details;
+    public String getFieldsChanged() {
+        return fieldsChanged;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setDetails(String details) {
-        this.details = details;
+    public void setFieldsChanged(String fieldsChanged) {
+        this.fieldsChanged = fieldsChanged;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public LocalDateTime getActionAt() {
-        return actionAt;
+    public String getDescription() {
+        return description;
     }
 
-    // Геттер или сеттер сущности. Через такие методы другие слои читают поля объекта или меняют их перед сохранением.
-    public void setActionAt(LocalDateTime actionAt) {
-        this.actionAt = actionAt;
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

@@ -13,12 +13,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Unit-тесты криптографического слоя.
-// Здесь проверяется, что подпись создаётся корректно, что изменение данных ломает проверку
-// и что канонизация JSON делает одинаковые данные действительно одинаковыми для подписи.
+// Это набор unit-тестов для модуля подписи.
+// Здесь мы отдельно убеждаемся, что подпись работает и для обычных JSON-объектов, и для готовых массивов байтов, которые понадобились в задании 5.
 class SigningServiceTest {
 
-    // Экземпляр сервиса подписи, с которым будут работать все тестовые сценарии в этом классе.
     private SigningService signingService;
 
     @BeforeEach
@@ -53,6 +51,15 @@ class SigningServiceTest {
 
         assertThat(signature).isNotBlank();
         assertThat(signingService.verify(ticket, signature)).isTrue();
+    }
+
+    @Test
+    void shouldSignAndVerifyRawBytes() {
+        byte[] document = "manifest bytes for task 5".getBytes(StandardCharsets.UTF_8);
+        byte[] signatureBytes = signingService.sign(document);
+
+        assertThat(signatureBytes).isNotEmpty();
+        assertThat(signingService.verify(document, signatureBytes)).isTrue();
     }
 
     @Test
