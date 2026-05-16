@@ -1,9 +1,12 @@
 package com.example.demo;
 
+import com.example.demo.config.MinioStorageProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
 @SpringBootApplication
+@EnableConfigurationProperties(MinioStorageProperties.class)
 // Точка входа в приложение. Spring Boot стартует именно отсюда и затем поднимает все контроллеры, сервисы, настройки безопасности и подключение к базе.
 public class DemoApplication {
 

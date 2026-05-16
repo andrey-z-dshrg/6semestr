@@ -309,6 +309,11 @@ public class AntivirusSignatureService {
         history.setUpdatedAt(signature.getUpdatedAt());
         history.setStatus(signature.getStatus());
         history.setDigitalSignatureBase64(signature.getDigitalSignatureBase64());
+        history.setSourceBucket(signature.getSourceBucket());
+        history.setSourceObjectKey(signature.getSourceObjectKey());
+        history.setSourceOriginalFilename(signature.getSourceOriginalFilename());
+        history.setSourceContentType(signature.getSourceContentType());
+        history.setSourceSizeBytes(signature.getSourceSizeBytes());
         historyRepository.save(history);
     }
 

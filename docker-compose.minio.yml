@@ -1,0 +1,29 @@
+services:
+  minio:
+    image: minio/minio:RELEASE.2026-04-24T17-50-52Z
+    container_name: ziovpo-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  mc-init:
+    image: minio/mc:RELEASE.2026-04-16T18-13-26Z
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin123); do sleep 2; done &&
+      /usr/bin/mc mb --ignore-existing local/signature-files &&
+      /usr/bin/mc anonymous set none local/signature-files &&
+      /usr/bin/mc admin user add local app-signatures change-me-minio-secret &&
+      /usr/bin/mc admin policy attach local readwrite --user app-signatures
+      "
+
+volumes:
+  minio-data:

@@ -1,807 +1,1026 @@
-{
-  "info": {
-    "_postman_id": "7c3f3c90-3bb4-47a1-8f34-4c96db1c6e29",
-    "name": "Antivirus Signatures ER Demo",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Login Admin",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set('accessToken', json.accessToken);",
-                  "pm.test('Access token saved', function () {",
-                  "    pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Signatures",
-      "item": [
-        {
-          "name": "Create Signature",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 201', function () {",
-                  "    pm.response.to.have.status(201);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set('signatureId', json.id);",
-                  "pm.collectionVariables.set('createdUpdatedAt', json.updatedAt);",
-                  "pm.test('Signature created and signed', function () {",
-                  "    pm.expect(json.id).to.be.a('string').and.not.empty;",
-                  "    pm.expect(json.status).to.eql('ACTIVE');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"threatName\": \"Trojan.Win32.Agent\",\n  \"firstBytes\": \"4D5A90000300000004000000\",\n  \"remainderHashHex\": \"5F4DCC3B5AA765D61D8327DEB882CF99\",\n  \"remainderLength\": 4096,\n  \"fileType\": \"exe\",\n  \"offsetStart\": 128,\n  \"offsetEnd\": 256\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Full Export After Create",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "const signatureId = pm.collectionVariables.get('signatureId');",
-                  "pm.test('Full export contains created signature and no DELETED rows', function () {",
-                  "    pm.expect(json.some(item => item.id === signatureId)).to.eql(true);",
-                  "    pm.expect(json.every(item => item.status !== 'DELETED')).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get By Ids",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "const signatureId = pm.collectionVariables.get('signatureId');",
-                  "pm.test('Request by ids returns the exact signature', function () {",
-                  "    pm.expect(json.length).to.eql(1);",
-                  "    pm.expect(json[0].id).to.eql(signatureId);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"ids\": [\"{{signatureId}}\"]\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/by-ids",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "by-ids"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Verify After Create",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.test('Stored digital signature is valid', function () {",
-                  "    pm.expect(json.valid).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}/verify",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}",
-                "verify"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Signature",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set('updatedUpdatedAt', json.updatedAt);",
-                  "pm.test('Update recalculates digital signature', function () {",
-                  "    pm.expect(json.threatName).to.eql('Trojan.Win32.Agent.V2');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"threatName\": \"Trojan.Win32.Agent.V2\",\n  \"firstBytes\": \"4D5A90000300000004000000AA\",\n  \"remainderHashHex\": \"A94A8FE5CCB19BA61C4C0873D391E987\",\n  \"remainderLength\": 8192,\n  \"fileType\": \"dll\",\n  \"offsetStart\": 512,\n  \"offsetEnd\": 768\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Increment After Update",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "const signatureId = pm.collectionVariables.get('signatureId');",
-                  "pm.test('Increment after update contains the row', function () {",
-                  "    pm.expect(json.some(item => item.id === signatureId)).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/increment?since={{createdUpdatedAt}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "increment"
-              ],
-              "query": [
-                {
-                  "key": "since",
-                  "value": "{{createdUpdatedAt}}"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "History After Update",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.test('Update writes a previous version to history', function () {",
-                  "    pm.expect(json.length).to.be.at.least(1);",
-                  "    pm.expect(json[0].threatName).to.eql('Trojan.Win32.Agent');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}/history",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}",
-                "history"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Audit After Update",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.test('Create and update are written to audit', function () {",
-                  "    pm.expect(json.length).to.be.at.least(2);",
-                  "    pm.expect(json.some(item => item.description === 'Signature created')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.description === 'Signature updated')).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}/audit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}",
-                "audit"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Delete Signature",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set('deletedUpdatedAt', json.updatedAt);",
-                  "pm.test('Delete is logical', function () {",
-                  "    pm.expect(json.status).to.eql('DELETED');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Full Export After Delete",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "const signatureId = pm.collectionVariables.get('signatureId');",
-                  "pm.test('Full export does not contain deleted rows', function () {",
-                  "    pm.expect(json.some(item => item.id === signatureId)).to.eql(false);",
-                  "    pm.expect(json.every(item => item.status !== 'DELETED')).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Increment After Delete",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "const signatureId = pm.collectionVariables.get('signatureId');",
-                  "const row = json.find(item => item.id === signatureId);",
-                  "pm.test('Increment contains deleted row', function () {",
-                  "    pm.expect(row).to.exist;",
-                  "    pm.expect(row.status).to.eql('DELETED');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/increment?since={{updatedUpdatedAt}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "increment"
-              ],
-              "query": [
-                {
-                  "key": "since",
-                  "value": "{{updatedUpdatedAt}}"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "History After Delete",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.test('History keeps both previous versions', function () {",
-                  "    pm.expect(json.length).to.be.at.least(2);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}/history",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}",
-                "history"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Audit After Delete",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.test('Audit contains create, update and delete descriptions', function () {",
-                  "    pm.expect(json.length).to.be.at.least(3);",
-                  "    pm.expect(json.some(item => item.description === 'Signature created')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.description === 'Signature updated')).to.eql(true);",
-                  "    pm.expect(json.some(item => item.description === 'Signature logically deleted')).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}/audit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}",
-                "audit"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Verify After Delete",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "pm.test('Stored digital signature remains valid after delete', function () {",
-                  "    pm.expect(json.valid).to.eql(true);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/{{signatureId}}/verify",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "{{signatureId}}",
-                "verify"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Public Key",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Public key returned', function () {",
-                  "    pm.expect(pm.response.text()).to.not.be.empty;",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/signatures/public-key",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "signatures",
-                "public-key"
-              ]
-            }
-          }
-        }
-      ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "https://localhost:8443"
-    },
-    {
-      "key": "adminUsername",
-      "value": "admin1"
-    },
-    {
-      "key": "adminPassword",
-      "value": "CHANGE_ME"
-    },
-    {
-      "key": "accessToken",
-      "value": ""
-    },
-    {
-      "key": "signatureId",
-      "value": ""
-    },
-    {
-      "key": "createdUpdatedAt",
-      "value": ""
-    },
-    {
-      "key": "updatedUpdatedAt",
-      "value": ""
-    },
-    {
-      "key": "deletedUpdatedAt",
-      "value": ""
-    }
-  ]
+﻿{
+    "info":  {
+                 "_postman_id":  "7c3f3c90-3bb4-47a1-8f34-4c96db1c6e29",
+                 "name":  "Antivirus Signatures JSON and Binary API",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Login Admin",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027accessToken\u0027, json.accessToken);",
+                                                                                    "pm.test(\u0027Access token saved\u0027, function () {",
+                                                                                    "    pm.expect(json.accessToken).to.be.a(\u0027string\u0027).and.not.empty;",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/login",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "JSON API",
+                     "item":  [
+                                  {
+                                      "name":  "Create Signature",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 201\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(201);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027signatureId\u0027, json.id);",
+                                                                                    "pm.collectionVariables.set(\u0027createdUpdatedAt\u0027, json.updatedAt);",
+                                                                                    "pm.collectionVariables.set(\u0027createdDigitalSignatureBase64\u0027, json.digitalSignatureBase64);",
+                                                                                    "pm.test(\u0027Signature created and signed\u0027, function () {",
+                                                                                    "    pm.expect(json.id).to.be.a(\u0027string\u0027).and.not.empty;",
+                                                                                    "    pm.expect(json.status).to.eql(\u0027ACTUAL\u0027);",
+                                                                                    "    pm.expect(json.digitalSignatureBase64).to.be.a(\u0027string\u0027).and.not.empty;",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"threatName\": \"Trojan.Win32.Agent\",\n  \"firstBytes\": \"4D5A90000300000004000000\",\n  \"remainderHashHex\": \"5F4DCC3B5AA765D61D8327DEB882CF99\",\n  \"remainderLength\": 4096,\n  \"fileType\": \"exe\",\n  \"offsetStart\": 128,\n  \"offsetEnd\": 256\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Full Export After Create",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "const signatureId = pm.collectionVariables.get(\u0027signatureId\u0027);",
+                                                                                    "pm.test(\u0027Full export contains created signature and no DELETED rows\u0027, function () {",
+                                                                                    "    pm.expect(json.some(item =\u003e item.id === signatureId)).to.eql(true);",
+                                                                                    "    pm.expect(json.every(item =\u003e item.status !== \u0027DELETED\u0027)).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get By Ids",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "const signatureId = pm.collectionVariables.get(\u0027signatureId\u0027);",
+                                                                                    "pm.test(\u0027Request by ids returns the exact signature\u0027, function () {",
+                                                                                    "    pm.expect(json.length).to.eql(1);",
+                                                                                    "    pm.expect(json[0].id).to.eql(signatureId);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"ids\": [\"{{signatureId}}\"]\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/by-ids",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "by-ids"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Verify After Create",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Stored digital signature is valid\u0027, function () {",
+                                                                                    "    pm.expect(json.valid).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}/verify",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}",
+                                                                               "verify"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Update Signature",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027updatedUpdatedAt\u0027, json.updatedAt);",
+                                                                                    "pm.collectionVariables.set(\u0027updatedDigitalSignatureBase64\u0027, json.digitalSignatureBase64);",
+                                                                                    "pm.test(\u0027Update recalculates digital signature\u0027, function () {",
+                                                                                    "    pm.expect(json.threatName).to.eql(\u0027Trojan.Win32.Agent.V2\u0027);",
+                                                                                    "    pm.expect(json.digitalSignatureBase64).to.not.eql(pm.collectionVariables.get(\u0027createdDigitalSignatureBase64\u0027));",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"threatName\": \"Trojan.Win32.Agent.V2\",\n  \"firstBytes\": \"4D5A90000300000004000000AA\",\n  \"remainderHashHex\": \"A94A8FE5CCB19BA61C4C0873D391E987\",\n  \"remainderLength\": 8192,\n  \"fileType\": \"dll\",\n  \"offsetStart\": 512,\n  \"offsetEnd\": 768\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Increment After Update",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "const signatureId = pm.collectionVariables.get(\u0027signatureId\u0027);",
+                                                                                    "pm.test(\u0027Increment after update contains the row\u0027, function () {",
+                                                                                    "    pm.expect(json.some(item =\u003e item.id === signatureId)).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/increment?since={{createdUpdatedAt}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "increment"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "since",
+                                                                                    "value":  "{{createdUpdatedAt}}"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "History After Update",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Update writes a previous version to history\u0027, function () {",
+                                                                                    "    pm.expect(json.length).to.be.at.least(1);",
+                                                                                    "    pm.expect(json[0].threatName).to.eql(\u0027Trojan.Win32.Agent\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}/history",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}",
+                                                                               "history"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Audit After Update",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Create and update are written to audit\u0027, function () {",
+                                                                                    "    pm.expect(json.length).to.be.at.least(2);",
+                                                                                    "    pm.expect(json.some(item =\u003e item.description === \u0027Signature created\u0027)).to.eql(true);",
+                                                                                    "    pm.expect(json.some(item =\u003e item.description === \u0027Signature updated\u0027)).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}/audit",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}",
+                                                                               "audit"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Delete Signature",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027deletedUpdatedAt\u0027, json.updatedAt);",
+                                                                                    "pm.test(\u0027Delete is logical\u0027, function () {",
+                                                                                    "    pm.expect(json.status).to.eql(\u0027DELETED\u0027);",
+                                                                                    "    pm.expect(json.digitalSignatureBase64).to.not.eql(pm.collectionVariables.get(\u0027updatedDigitalSignatureBase64\u0027));",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "DELETE",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Full Export After Delete",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "const signatureId = pm.collectionVariables.get(\u0027signatureId\u0027);",
+                                                                                    "pm.test(\u0027Full export does not contain deleted rows\u0027, function () {",
+                                                                                    "    pm.expect(json.some(item =\u003e item.id === signatureId)).to.eql(false);",
+                                                                                    "    pm.expect(json.every(item =\u003e item.status !== \u0027DELETED\u0027)).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Increment After Delete",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "const signatureId = pm.collectionVariables.get(\u0027signatureId\u0027);",
+                                                                                    "const row = json.find(item =\u003e item.id === signatureId);",
+                                                                                    "pm.test(\u0027Increment contains deleted row\u0027, function () {",
+                                                                                    "    pm.expect(row).to.exist;",
+                                                                                    "    pm.expect(row.status).to.eql(\u0027DELETED\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/increment?since={{updatedUpdatedAt}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "increment"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "since",
+                                                                                    "value":  "{{updatedUpdatedAt}}"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "History After Delete",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027History keeps both previous versions\u0027, function () {",
+                                                                                    "    pm.expect(json.length).to.be.at.least(2);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}/history",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}",
+                                                                               "history"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Audit After Delete",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Audit contains create, update and delete descriptions\u0027, function () {",
+                                                                                    "    pm.expect(json.length).to.be.at.least(3);",
+                                                                                    "    pm.expect(json.some(item =\u003e item.description === \u0027Signature created\u0027)).to.eql(true);",
+                                                                                    "    pm.expect(json.some(item =\u003e item.description === \u0027Signature updated\u0027)).to.eql(true);",
+                                                                                    "    pm.expect(json.some(item =\u003e item.description === \u0027Signature logically deleted\u0027)).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}/audit",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}",
+                                                                               "audit"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Verify After Delete",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027Stored digital signature remains valid after delete\u0027, function () {",
+                                                                                    "    pm.expect(json.valid).to.eql(true);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/{{signatureId}}/verify",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "{{signatureId}}",
+                                                                               "verify"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Public Key Base64",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027Public key returned\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.text()).to.not.be.empty;",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/public-key",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "public-key"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Get Public Key PEM",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027PEM public key returned\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.text()).to.include(\u0027BEGIN PUBLIC KEY\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/signatures/public-key/pem",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "signatures",
+                                                                               "public-key",
+                                                                               "pem"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Binary API",
+                     "item":  [
+                                  {
+                                      "name":  "Binary Full Export",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027Response is multipart/mixed\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027multipart/mixed\u0027);",
+                                                                                    "});",
+                                                                                    "const body = pm.response.text();",
+                                                                                    "pm.test(\u0027Multipart contains manifest.bin and data.bin\u0027, function () {",
+                                                                                    "    pm.expect(body).to.include(\u0027manifest.bin\u0027);",
+                                                                                    "    pm.expect(body).to.include(\u0027data.bin\u0027);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027Binary payload contains protocol markers\u0027, function () {",
+                                                                                    "    pm.expect(body).to.include(\u0027MF-Makarov\u0027);",
+                                                                                    "    pm.expect(body).to.include(\u0027DB-Makarov\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/binary/signatures/full",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "binary",
+                                                                               "signatures",
+                                                                               "full"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Binary Increment Export",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027Response is multipart/mixed\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027multipart/mixed\u0027);",
+                                                                                    "});",
+                                                                                    "const body = pm.response.text();",
+                                                                                    "pm.test(\u0027Increment multipart is built\u0027, function () {",
+                                                                                    "    pm.expect(body).to.include(\u0027manifest.bin\u0027);",
+                                                                                    "    pm.expect(body).to.include(\u0027data.bin\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/binary/signatures/increment?since={{createdUpdatedAt}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "binary",
+                                                                               "signatures",
+                                                                               "increment"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "since",
+                                                                                    "value":  "{{createdUpdatedAt}}"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Binary Export By Ids",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027Status 200\u0027, function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027Response is multipart/mixed\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027multipart/mixed\u0027);",
+                                                                                    "});",
+                                                                                    "const body = pm.response.text();",
+                                                                                    "pm.test(\u0027By-ids binary export contains both files\u0027, function () {",
+                                                                                    "    pm.expect(body).to.include(\u0027manifest.bin\u0027);",
+                                                                                    "    pm.expect(body).to.include(\u0027data.bin\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{accessToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"ids\": [\"{{signatureId}}\"]\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/binary/signatures/by-ids",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "binary",
+                                                                               "signatures",
+                                                                               "by-ids"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "https://localhost:8443"
+                     },
+                     {
+                         "key":  "adminUsername",
+                         "value":  "admin1"
+                     },
+                     {
+                         "key":  "adminPassword",
+                         "value":  "CHANGE_ME"
+                     },
+                     {
+                         "key":  "accessToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "signatureId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "createdUpdatedAt",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "updatedUpdatedAt",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "deletedUpdatedAt",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "createdDigitalSignatureBase64",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "updatedDigitalSignatureBase64",
+                         "value":  ""
+                     }
+                 ]
 }

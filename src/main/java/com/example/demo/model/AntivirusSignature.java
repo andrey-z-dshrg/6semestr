@@ -68,6 +68,21 @@ public class AntivirusSignature {
     // Она не вычисляется в binary API заново, а берётся из этого поля и кладётся в manifest.bin.
     private String digitalSignatureBase64;
 
+    @Column(name = "source_bucket", length = 255)
+    private String sourceBucket;
+
+    @Column(name = "source_object_key", length = 512)
+    private String sourceObjectKey;
+
+    @Column(name = "source_original_filename", length = 255)
+    private String sourceOriginalFilename;
+
+    @Column(name = "source_content_type", length = 255)
+    private String sourceContentType;
+
+    @Column(name = "source_size_bytes")
+    private Long sourceSizeBytes;
+
     public UUID getId() {
         return id;
     }
@@ -154,5 +169,45 @@ public class AntivirusSignature {
 
     public void setDigitalSignatureBase64(String digitalSignatureBase64) {
         this.digitalSignatureBase64 = digitalSignatureBase64;
+    }
+
+    public String getSourceBucket() {
+        return sourceBucket;
+    }
+
+    public void setSourceBucket(String sourceBucket) {
+        this.sourceBucket = sourceBucket;
+    }
+
+    public String getSourceObjectKey() {
+        return sourceObjectKey;
+    }
+
+    public void setSourceObjectKey(String sourceObjectKey) {
+        this.sourceObjectKey = sourceObjectKey;
+    }
+
+    public String getSourceOriginalFilename() {
+        return sourceOriginalFilename;
+    }
+
+    public void setSourceOriginalFilename(String sourceOriginalFilename) {
+        this.sourceOriginalFilename = sourceOriginalFilename;
+    }
+
+    public String getSourceContentType() {
+        return sourceContentType;
+    }
+
+    public void setSourceContentType(String sourceContentType) {
+        this.sourceContentType = sourceContentType;
+    }
+
+    public Long getSourceSizeBytes() {
+        return sourceSizeBytes;
+    }
+
+    public void setSourceSizeBytes(Long sourceSizeBytes) {
+        this.sourceSizeBytes = sourceSizeBytes;
     }
 }
